@@ -1,47 +1,64 @@
 import os
 import shutil
 from datetime import datetime
-from folders_archivos import Folders as f #Class where are the folders paths
+from folders_archivos import Folders  # Importar la clase, no la instancia
 
-# Create folders if not exists
-for folder in [f.pdf_folder, f.text_folder, f.excel_folder, f.image_folder, f.presentation_folder]:
-    os.makedirs(folder, exist_ok=True)
+class OrganizadorArchivos:
+    def __init__(self, folders):
+        self.folders = folders
+        self._crear_carpetas()
 
-# clissify origin files
-for filename in os.listdir(f.download_folder):
-    source_path = os.path.join(f.download_folder, filename)
+    def _crear_carpetas(self):
+        for folder in [
+            self.folders.pdf_folder,
+            self.folders.text_folder,
+            self.folders.excel_folder,
+            self.folders.image_folder,
+            self.folders.presentation_folder,
+            self.folders.app_folder,
+            self.folders.other_folder
+        ]:
+            os.makedirs(folder, exist_ok=True)
 
-    #skip if the archive is a folder
-    if os.path.isdir(source_path):
-        continue
+    def organizar(self):
+        for filename in os.listdir(self.folders.download_folder):
+            source_path = os.path.join(self.folders.download_folder, filename)
 
-    #Obtain the last updated date
-    timestamp = os.path.getmtime(source_path)
-    file_date = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d')
-    #Create new name with the date
-    new_name = f"{file_date}_{filename}"
+            if os.path.isdir(source_path):
+                continue
 
+            timestamp = os.path.getmtime(source_path)
+            file_date = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d')
+            new_name = f"{file_date}_{filename}"
 
-    #Clasify files into folders
-    if filename.lower().endswith('.pdf'):
-        destination_path = os.path.join(f.pdf_folder, new_name)
+            destination_path = self._clasificar_archivo(filename, new_name)
+            if not destination_path:
+                continue
 
-    elif filename.lower().endswith('.docx', '.txt'):
-        destination_path = os.path.join(f.text_folder, new_name)
+            shutil.move(source_path, destination_path)
+            print(f"Moved: {filename} -> {destination_path}")
 
-    elif filename.lower().endswith(('.xlsx', '.xls')):
-        destination_path = os.path.join(f.excel_folder, new_name)
+    def _clasificar_archivo(self, filename, new_name):
+        nombre = filename.lower()
+        if nombre.endswith('.pdf'):
+            return os.path.join(self.folders.pdf_folder, new_name)
+        elif nombre.endswith(('.docx', '.txt')):
+            return os.path.join(self.folders.text_folder, new_name)
+        elif nombre.endswith(('.xlsx', '.xls')):
+            return os.path.join(self.folders.excel_folder, new_name)
+        elif nombre.endswith(('.jpg', '.jpeg', '.png')):
+            return os.path.join(self.folders.image_folder, new_name)
+        elif nombre.endswith('.pptx'):
+            return os.path.join(self.folders.presentation_folder, new_name)
+        elif nombre.endswith('.exe'):
+            return os.path.join(self.folders.app_folder, new_name)
+        elif nombre.endswith('.zip'):
+            return os.path.join(self.folders.other_folder, new_name)
+        else:
+            return None
 
-    elif filename.lower().endswith(('.jpg', '.jpeg', '.png')):
-        destination_path = os.path.join(f.image_folder, new_name)
-    
-    elif filename.lower().endswith(('.pptx')):
-        destination_path = os.path.join(f.presentation_folder, new_name)
-
-    else:
-        continue  # Ignore other types
-
-    # Move archive
-    shutil.move(source_path, destination_path)
-    print(f"Moved: {filename} -> {destination_path}")
+if __name__ == "__main__":
+    folders = Folders()  # Crear instancia de Folders
+    organizador = OrganizadorArchivos(folders)
+    organizador.organizar()
 
